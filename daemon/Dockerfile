@@ -4,12 +4,8 @@ MAINTAINER Matt Hill <matthill@openalpr.com>
 
 # Setup gpg key and deb repo
 RUN apt-get update && apt-get install -y wget && \
-    wget -qO - http://deb.openalpr.com/openalpr.gpg.key | apt-key add - && \
-    echo "deb http://deb.openalpr.com/xenial-commercial/ xenial main" > /etc/apt/sources.list.d/openalpr.list && \
-	apt-get update && apt-get install -y \
-      openalpr \
-      openalpr-daemon \
-      openalpr-link \
+    apt-get update && apt-get install -y \
+      openalpr openalpr-daemon openalpr-utils libopenalpr-dev \
       python-openalpr \
       supervisor && \
       touch /usr/share/openalpr/is_docker && \
@@ -37,5 +33,23 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 # send over the license key and the alprd configuration
 #COPY license.conf /etc/openalpr/license.conf
 COPY alprd.conf /etc/openalpr/alprd.conf
+
+
+
+
+
+RUN apt-get update && apt-get install -y python-pip python-openalpr
+
+COPY src/requirements.txt /opt/openalprapi/
+
+RUN pip install -r /opt/openalprapi/requirements.txt
+
+# send over the license key 
+#COPY license.conf /etc/openalpr/license.conf
+
+COPY src/webservice.py /opt/openalprapi/
+
+EXPOSE 8080
+
 
 CMD ["/usr/bin/supervisord"]

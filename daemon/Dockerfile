@@ -1,22 +1,29 @@
-FROM ubuntu:16.04
-MAINTAINER Matt Hill <matthill@openalpr.com>
+FROM ubuntu:20.04
+MAINTAINER David Smith <davegsmith@gmail.com>
+
+ENV TZ=Europe/London
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN  apt-get update && apt-get install -y wget
+RUN apt-get install -y git-core build-essential autoconf automake libtool cmake libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev
+RUN apt-get install -y  libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev libdc1394-22-dev libopencv-dev libleptonica-dev leptonica-progs  tesseract-ocr-eng libtesseract-dev gimagereader  liblog4cplus-dev libcurl3-dev supervisor  
+RUN apt-get install -y  python-dev python-numpy 
 
 
-# Setup gpg key and deb repo
-RUN apt-get update && apt-get install -y wget && \
-    apt-get update && apt-get install -y \
-      openalpr openalpr-daemon openalpr-utils libopenalpr-dev \
-      python-openalpr \
-      supervisor && \
-      touch /usr/share/openalpr/is_docker && \
-      rm -rf /var/lib/apt/lists/*
+RUN git clone https://github.com/openalpr/openalpr.git && \
+  cd openalpr/src && \
+  cd ../src && \
+  mkdir build && \
+  cd build && \
+  cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_INSTALL_SYSCONFDIR:PATH=/etc .. && \
+  make -j 8 && \
+  make install
 
-
-# Adjust beanstalkd to also allow remote connections
-RUN sed -i 's/BEANSTALKD_LISTEN_ADDR\s*=\s*127.0.0.1/BEANSTALKD_LISTEN_ADDR=0.0.0.0/' /etc/default/beanstalkd
-
-# Expose the beanstalkd port and the web service
-EXPOSE 11300 8355
+RUN pwd
+RUN ls -lrt
+RUN cd openalpr/src/bindings/python && \
+  python3 -V && \
+  python3 setup.py install 
 
 # Allow the plate images to be persisted on the host
 VOLUME /var/lib/openalpr/
@@ -30,22 +37,7 @@ COPY service-override /bin/systemctl
 # Startup script for OpenALPR services
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# send over the license key and the alprd configuration
-#COPY license.conf /etc/openalpr/license.conf
 COPY alprd.conf /etc/openalpr/alprd.conf
-
-
-
-
-
-RUN apt-get update && apt-get install -y python-pip python-openalpr
-
-COPY src/requirements.txt /opt/openalprapi/
-
-RUN pip install -r /opt/openalprapi/requirements.txt
-
-# send over the license key 
-#COPY license.conf /etc/openalpr/license.conf
 
 COPY src/webservice.py /opt/openalprapi/
 

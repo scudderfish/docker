@@ -2,7 +2,8 @@ import cgi
 import json
 import re
 import threading
-from argparse import ArgumentParser
+import sys
+#raise Exception(" path "+','.join(sys.path))
 from cgi import parse_header
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
@@ -65,12 +66,7 @@ class SimpleHttpServer:
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description='HTTP Server')
-    parser.add_argument('port', type=int, help='Listening port for HTTP Server', default=8080)
-    parser.add_argument('ip', help='HTTP Server IP', default="127.0.0.1")
-    args = parser.parse_args()
-
-    server = SimpleHttpServer(args.ip, args.port)
+    server = SimpleHttpServer("0.0.0.0", 8080)
     print('HTTP Server Running...........')
     server.start()
     server.waitForThread()
